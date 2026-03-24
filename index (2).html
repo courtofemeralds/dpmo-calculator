@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DPMO Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Apple / macOS San Francisco Font */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+    /* Glassmorphism effect */
+    .glass {
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    /* Dark mode */
+    .dark body {
+      background-color: #1c1c1e;
+      color: #f2f2f2;
+    }
+    .dark .glass {
+      background: rgba(28,28,30,0.6);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+    .modal-bg {
+      background: rgba(0,0,0,0.4);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex">
+
+  <!-- Sidebar -->
+  <div class="w-64 p-6 glass flex flex-col space-y-6">
+    <h1 class="text-2xl font-semibold text-center">DPMO Calculator</h1>
+    <button id="helpBtn" class="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 20c4.418 0 8-1.79 8-4V8c0-2.21-3.582-4-8-4S4 5.79 4 8v8c0 2.21 3.582 4 8 4z"/>
+      </svg>
+      <span>Help</span>
+    </button>
+    <button id="darkModeBtn" class="flex items-center justify-center space-x-2 px-4 py-2 bg-gray-300 text-gray-900 rounded-lg hover:bg-gray-400">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m8.66-8.66h1M3.34 12h1m12.02 5.66l.7.7M5.64 5.64l.7.7m12.02 0l-.7.7M5.64 18.36l-.7.7"/>
+      </svg>
+      <span>Toggle Dark Mode</span>
+    </button>
+  </div>
+
+  <!-- Main content -->
+  <div class="flex-1 p-8 overflow-auto">
+    <div class="glass p-6 space-y-4">
+      <h2 class="text-xl font-semibold">Input Data</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block mb-1">Volume</label>
+          <input type="number" id="volume" class="w-full px-3 py-2 rounded-lg border border-gray-300">
+        </div>
+        <div>
+          <label class="block mb-1">CNL Errors</label>
+          <input type="number" id="cnl" class="w-full px-3 py-2 rounded-lg border border-gray-300">
+        </div>
+        <div>
+          <label class="block mb-1">Attempt Errors</label>
+          <input type="number" id="attempt" class="w-full px-3 py-2 rounded-lg border border-gray-300">
+        </div>
+        <div>
+          <label class="block mb-1">Opportunities per Unit</label>
+          <input type="number" id="opportunities" class="w-full px-3 py-2 rounded-lg border border-gray-300" value="1">
+        </div>
+      </div>
+      <div class="flex space-x-4 mt-2">
+        <button id="calculateBtn" class="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span>Calculate</span>
+        </button>
+        <button id="exportBtn" class="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12v8m0 0l-4-4m4 4l4-4M4 12h16"/>
+          </svg>
+          <span>Export CSV</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- History Table -->
+    <div class="glass mt-6 p-6">
+      <h2 class="text-xl font-semibold mb-4">History</h2>
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr>
+            <th class="border-b p-2">Volume</th>
+            <th class="border-b p-2">CNL Errors</th>
+            <th class="border-b p-2">Attempt Errors</th>
+            <th class="border-b p-2">Total Errors</th>
+            <th class="border-b p-2">Opportunities</th>
+            <th class="border-b p-2">DPMO</th>
+          </tr>
+        </thead>
+        <tbody id="historyTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Help Modal -->
+  <div id="helpModal" class="fixed inset-0 flex items-center justify-center hidden">
+    <div class="modal-bg absolute inset-0"></div>
+    <div class="glass relative p-6 max-w-lg w-full z-10">
+      <h2 class="text-xl font-semibold mb-4">How to Use</h2>
+      <p class="mb-2">1. Enter your Volume, CNL Errors, Attempt Errors, and Opportunities per Unit.</p>
+      <p class="mb-2">2. Click <strong>Calculate</strong> to compute DPMO and log it.</p>
+      <p class="mb-2">3. History is saved automatically in your browser and persists on reload.</p>
+      <p class="mb-2">4. Click <strong>Export CSV</strong> to download the log.</p>
+      <button id="closeHelp" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Close</button>
+    </div>
+  </div>
+
+  <script>
+    // Dark Mode Toggle
+    const darkBtn = document.getElementById('darkModeBtn');
+    darkBtn.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+    });
+
+    // Help Modal
+    const helpBtn = document.getElementById('helpBtn');
+    const helpModal = document.getElementById('helpModal');
+    const closeHelp = document.getElementById('closeHelp');
+    helpBtn.addEventListener('click', () => helpModal.classList.remove('hidden'));
+    closeHelp.addEventListener('click', () => helpModal.classList.add('hidden'));
+
+    const volumeInput = document.getElementById('volume');
+    const cnlInput = document.getElementById('cnl');
+    const attemptInput = document.getElementById('attempt');
+    const oppInput = document.getElementById('opportunities');
+    const historyTable = document.getElementById('historyTable');
+
+    // Load history from localStorage
+    let history = JSON.parse(localStorage.getItem('dpmoHistory')) || [];
+    function renderHistory() {
+      historyTable.innerHTML = '';
+      history.forEach(entry => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="border-b p-2">${entry.volume}</td>
+          <td class="border-b p-2">${entry.cnl}</td>
+          <td class="border-b p-2">${entry.attempt}</td>
+          <td class="border-b p-2">${entry.total}</td>
+          <td class="border-b p-2">${entry.opportunities}</td>
+          <td class="border-b p-2">${entry.dpmo}</td>
+        `;
+        historyTable.appendChild(tr);
+      });
+    }
+    renderHistory();
+
+    // Calculate DPMO
+    document.getElementById('calculateBtn').addEventListener('click', () => {
+      const volume = parseFloat(volumeInput.value) || 0;
+      const cnl = parseFloat(cnlInput.value) || 0;
+      const attempt = parseFloat(attemptInput.value) || 0;
+      const opportunities = parseFloat(oppInput.value) || 1;
+      const totalErrors = cnl + attempt;
+      const dpmo = ((totalErrors / (volume * opportunities)) * 1000000).toFixed(0);
+
+      const entry = {volume, cnl, attempt, total: totalErrors, opportunities, dpmo};
+      history.push(entry);
+      localStorage.setItem('dpmoHistory', JSON.stringify(history));
+      renderHistory();
+    });
+
+    // Export CSV
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const headers = ['Volume', 'CNL Errors', 'Attempt Errors', 'Total Errors', 'Opportunities', 'DPMO'];
+      const rows = history.map(e => [e.volume, e.cnl, e.attempt, e.total, e.opportunities, e.dpmo].join(','));
+      const csvContent = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csvContent], {type: 'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'dpmo_history.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
