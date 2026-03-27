@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DPMO Calculator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #f2f2f7;
+      --card:      #ffffff;
+      --surface:   #f7f7f8;
+      --surface-b: #e8e8ec;
+      --border:    #d8d8dc;
+      --text:      #1c1c1e;
+      --text2:     #48484a;
+      --text3:     #8e8e93;
+      --blue:      #0066cc;
+      --blue-bg:   #e8f0fb;
+      --blue-bd:   rgba(0,102,204,.18);
+      --red:       #d93025;
+      --red-bg:    #fce8e6;
+      --divider:   #e0e0e4;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NAV ── */
+    nav {
+      background: rgba(242,242,247,.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .nav-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -.02em;
+    }
+
+    .nav-sub {
+      font-size: 12px;
+      color: var(--text3);
+      margin-top: 1px;
+    }
+
+    /* ── PAGE ── */
+    .page {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 32px 16px 64px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .card-inner { padding: 18px; }
+
+    /* ── SECTION LABEL ── */
+    .slabel {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text3);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    /* ── RESULT ── */
+    #result-card {
+      display: none;
+      background: var(--blue-bg);
+      border: 1px solid var(--blue-bd);
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    #result-card.show {
+      display: block;
+      animation: fadeUp .2s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(-5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-top {
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+      margin-bottom: 12px;
+    }
+
+    .result-num {
+      font-size: 40px;
+      font-weight: 200;
+      color: var(--blue);
+      letter-spacing: -.04em;
+      line-height: 1;
+    }
+
+    .result-unit {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--blue);
+      opacity: .6;
+    }
+
+    .result-stats { display: flex; gap: 24px; flex-wrap: wrap; }
+
+    .rstat { display: flex; flex-direction: column; gap: 2px; }
+
+    .rstat-lbl {
+      font-size: 11px;
+      color: rgba(0,90,180,.5);
+      font-weight: 500;
+    }
+
+    .rstat-val {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--blue);
+    }
+
+    /* ── FIELDS ── */
+    .fields { display: flex; flex-direction: column; }
+
+    .field-row {
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid var(--divider);
+      transition: background .12s;
+    }
+
+    .field-row:last-child { border-bottom: none; }
+    .field-row:focus-within { background: #fafafe; }
+
+    .field-row.error { background: #fff8f8; }
+
+    .flabel {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text2);
+      min-width: 172px;
+      flex-shrink: 0;
+      padding: 0 16px 0 0;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      padding-left: 16px;
+    }
+
+    .field-row input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 0 16px 0 0;
+      height: 44px;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      text-align: right;
+    }
+
+    .field-row input::placeholder { color: var(--text3); }
+
+    .field-row.error input::placeholder { color: rgba(217,48,37,.5); }
+
+    /* ── FORMULA ── */
+    .formula {
+      font-size: 11.5px;
+      color: var(--text3);
+      padding: 10px 16px 14px;
+      line-height: 1.5;
+      border-top: 1px solid var(--divider);
+    }
+
+    /* ── ERROR ── */
+    .err-msg {
+      font-size: 12px;
+      color: var(--red);
+      padding: 0 16px 12px;
+      display: none;
+    }
+
+    .err-msg.show { display: block; }
+
+    /* ── BUTTONS ── */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      padding: 14px 16px 16px;
+      border-top: 1px solid var(--divider);
+    }
+
+    .btn {
+      flex: 1;
+      height: 34px;
+      border-radius: 8px;
+      border: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: filter .1s, transform .1s;
+      letter-spacing: -.01em;
+    }
+
+    .btn:active { transform: scale(.97); }
+
+    .btn-primary {
+      background: linear-gradient(to bottom, #1a7af8, #0062d6);
+      color: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.12);
+    }
+
+    .btn-primary:hover { filter: brightness(1.07); }
+
+    .btn-secondary {
+      background: linear-gradient(to bottom, #fafafa, #efefef);
+      color: var(--text2);
+      border: 0.5px solid var(--border);
+      box-shadow: 0 1px 2px rgba(0,0,0,.06);
+    }
+
+    .btn-secondary:hover { filter: brightness(.96); }
+    .btn-secondary:disabled { opacity: .36; cursor: not-allowed; pointer-events: none; }
+
+    /* ── HISTORY HEADER ── */
+    .hist-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 16px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .hist-hdr:hover .slabel { color: var(--blue); }
+    .hist-hdr .slabel { margin: 0; pointer-events: none; }
+
+    .chevron {
+      width: 15px; height: 15px;
+      color: var(--text3);
+      transition: transform .22s cubic-bezier(.22,.68,0,1.2);
+      flex-shrink: 0;
+    }
+
+    .chevron.open { transform: rotate(90deg); }
+
+    .hist-body {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height .28s cubic-bezier(.4,0,.2,1);
+      border-top: 1px solid transparent;
+    }
+
+    .hist-body.open {
+      max-height: 600px;
+      border-top-color: var(--divider);
+    }
+
+    /* ── TABLE ── */
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+
+    thead th {
+      background: var(--surface);
+      padding: 6px 10px;
+      text-align: left;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--text3);
+      border-bottom: 1px solid var(--divider);
+      white-space: nowrap;
+    }
+
+    thead th:last-child { width: 28px; }
+
+    tbody tr { border-bottom: 1px solid var(--divider); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface); }
+
+    tbody td {
+      padding: 8px 10px;
+      color: var(--text2);
+      white-space: nowrap;
+    }
+
+    .td-dpmo { color: var(--blue); font-weight: 600; }
+
+    .row-del {
+      background: none; border: none;
+      cursor: pointer; color: var(--text3);
+      padding: 3px; border-radius: 4px;
+      line-height: 0;
+      transition: color .1s, background .1s;
+    }
+
+    .row-del:hover { color: var(--red); background: var(--red-bg); }
+    .row-del svg { width: 12px; height: 12px; display: block; }
+
+    .empty-td {
+      text-align: center;
+      padding: 20px !important;
+      color: var(--text3) !important;
+      font-size: 13px;
+    }
+
+    .hist-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px 10px;
+      border-top: 1px solid var(--divider);
+    }
+
+    .entry-count { font-size: 11px; color: var(--text3); }
+
+    .txt-btn {
+      background: none; border: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      font-size: 12px; color: var(--blue);
+      cursor: pointer; padding: 2px 6px; border-radius: 4px;
+    }
+
+    .txt-btn:hover { background: var(--blue-bg); }
+    .txt-btn:disabled { color: var(--text3); cursor: default; }
+    .txt-btn:disabled:hover { background: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <div>
+      <div class="nav-title">DPMO Calculator</div>
+    </div>
+  </nav>
+
+  <div class="page">
+
+    <!-- Result -->
+    <div id="result-card">
+      <div class="result-top">
+        <span class="result-num" id="res-dpmo"></span>
+        <span class="result-unit">DPMO</span>
+      </div>
+      <div class="result-stats">
+        <div class="rstat">
+          <span class="rstat-lbl">Total defects</span>
+          <span class="rstat-val" id="res-defects"></span>
+        </div>
+        <div class="rstat">
+          <span class="rstat-lbl">Packages processed</span>
+          <span class="rstat-val" id="res-vol"></span>
+        </div>
+        <div class="rstat">
+          <span class="rstat-lbl">Yield</span>
+          <span class="rstat-val" id="res-yield"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input card -->
+    <div class="card">
+      <div class="card-inner" style="padding-bottom:0">
+        <div class="slabel">Process data</div>
+      </div>
+      <div class="fields">
+        <div class="field-row" id="fr-vol">
+          <div class="flabel">Packages processed</div>
+          <input type="number" id="inp-vol" min="1" placeholder="0">
+        </div>
+        <div class="field-row" id="fr-cnl">
+          <div class="flabel">CNL errors</div>
+          <input type="number" id="inp-cnl" min="0" placeholder="0">
+        </div>
+        <div class="field-row" id="fr-att">
+          <div class="flabel">Attempt errors</div>
+          <input type="number" id="inp-att" min="0" placeholder="0">
+        </div>
+      </div>
+
+      <div class="formula">DPMO = (CNL + Attempt errors) ÷ Packages × 1,000,000</div>
+
+      <div class="err-msg" id="err-msg"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="calc-btn">Calculate</button>
+        <button class="btn btn-secondary" id="export-btn" disabled>Export CSV</button>
+      </div>
+    </div>
+
+    <!-- History card -->
+    <div class="card">
+      <div class="hist-hdr" id="hist-toggle">
+        <div class="slabel">Calculation history</div>
+        <svg class="chevron" id="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </div>
+      <div class="hist-body" id="hist-body">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Packages</th>
+              <th>CNL</th>
+              <th>Attempt</th>
+              <th>Total</th>
+              <th>Yield</th>
+              <th>DPMO</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="hist-tbody"></tbody>
+        </table>
+        <div class="hist-footer">
+          <span class="entry-count" id="entry-count">0 entries</span>
+          <button class="txt-btn" id="clear-btn" disabled>Clear all</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let records = JSON.parse(localStorage.getItem('dpmoRecs3') || '[]');
+    let histOpen = false;
+
+    const $ = id => document.getElementById(id);
+
+    $('hist-toggle').addEventListener('click', () => {
+      histOpen = !histOpen;
+      $('hist-body').classList.toggle('open', histOpen);
+      $('chevron').classList.toggle('open', histOpen);
+    });
+
+    ['inp-vol','inp-cnl','inp-att'].forEach(id => {
+      $(id).addEventListener('input', () => {
+        $(id).closest('.field-row').classList.remove('error');
+        $('err-msg').classList.remove('show');
+      });
+    });
+
+    function validate() {
+      ['fr-vol','fr-cnl','fr-att'].forEach(id => $(id).classList.remove('error'));
+      $('err-msg').classList.remove('show');
+
+      const vol = parseFloat($('inp-vol').value);
+      const cnl = parseFloat($('inp-cnl').value);
+      const att = parseFloat($('inp-att').value);
+
+      if (!$('inp-vol').value || isNaN(vol) || vol <= 0) {
+        $('fr-vol').classList.add('error');
+        $('err-msg').textContent = 'Packages processed must be greater than 0.';
+        $('err-msg').classList.add('show');
+        return false;
+      }
+      if ($('inp-cnl').value !== '' && (isNaN(cnl) || cnl < 0)) {
+        $('fr-cnl').classList.add('error');
+        $('err-msg').textContent = 'CNL errors cannot be negative.';
+        $('err-msg').classList.add('show');
+        return false;
+      }
+      if ($('inp-att').value !== '' && (isNaN(att) || att < 0)) {
+        $('fr-att').classList.add('error');
+        $('err-msg').textContent = 'Attempt errors cannot be negative.';
+        $('err-msg').classList.add('show');
+        return false;
+      }
+      return true;
+    }
+
+    $('calc-btn').addEventListener('click', () => {
+      if (!validate()) return;
+
+      const vol   = parseFloat($('inp-vol').value);
+      const cnl   = parseFloat($('inp-cnl').value) || 0;
+      const att   = parseFloat($('inp-att').value) || 0;
+      const total = cnl + att;
+      const dpmo  = Math.round((total / vol) * 1_000_000);
+      const yld   = ((1 - total / vol) * 100).toFixed(2);
+      const ts    = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+      $('res-dpmo').textContent    = dpmo.toLocaleString();
+      $('res-defects').textContent = total.toLocaleString();
+      $('res-vol').textContent     = vol.toLocaleString();
+      $('res-yield').textContent   = yld + '%';
+
+      const card = $('result-card');
+      card.classList.remove('show');
+      void card.offsetWidth;
+      card.classList.add('show');
+
+      records.push({ ts, vol, cnl, att, total, dpmo, yld });
+      localStorage.setItem('dpmoRecs3', JSON.stringify(records));
+      renderTable();
+
+      if (records.length === 1 && !histOpen) {
+        histOpen = true;
+        $('hist-body').classList.add('open');
+        $('chevron').classList.add('open');
+      }
+    });
+
+    function renderTable() {
+      const tbody = $('hist-tbody');
+      tbody.innerHTML = '';
+
+      if (records.length === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 8;
+        td.className = 'empty-td';
+        td.textContent = 'No calculations yet';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      } else {
+        records.forEach((r, i) => {
+          const tr = document.createElement('tr');
+          [r.ts, r.vol.toLocaleString(), r.cnl, r.att, r.total, r.yld + '%', r.dpmo.toLocaleString()].forEach((v, ci) => {
+            const td = document.createElement('td');
+            td.textContent = v;
+            if (ci === 6) td.className = 'td-dpmo';
+            tr.appendChild(td);
+          });
+          const tdDel = document.createElement('td');
+          const btn   = document.createElement('button');
+          btn.className = 'row-del';
+          btn.title = 'Delete';
+          btn.innerHTML = `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>`;
+          btn.addEventListener('click', () => {
+            records.splice(i, 1);
+            localStorage.setItem('dpmoRecs3', JSON.stringify(records));
+            renderTable();
+            if (records.length === 0) $('result-card').classList.remove('show');
+          });
+          tdDel.appendChild(btn);
+          tr.appendChild(tdDel);
+          tbody.appendChild(tr);
+        });
+      }
+
+      const n = records.length;
+      $('entry-count').textContent = `${n} ${n === 1 ? 'entry' : 'entries'}`;
+      $('export-btn').disabled = n === 0;
+      $('clear-btn').disabled  = n === 0;
+    }
+
+    $('clear-btn').addEventListener('click', () => {
+      if (!confirm('Clear all history? This cannot be undone.')) return;
+      records = [];
+      localStorage.setItem('dpmoRecs3', JSON.stringify(records));
+      renderTable();
+      $('result-card').classList.remove('show');
+    });
+
+    $('export-btn').addEventListener('click', () => {
+      const header = 'Time,Packages,CNL Errors,Attempt Errors,Total Defects,Yield %,DPMO';
+      const rows   = records.map(r => [r.ts, r.vol, r.cnl, r.att, r.total, r.yld, r.dpmo].join(','));
+      const blob   = new Blob([[header, ...rows].join('\n')], { type: 'text/csv' });
+      const url    = URL.createObjectURL(blob);
+      const a      = document.createElement('a');
+      a.href = url; a.download = `dpmo_${Date.now()}.csv`; a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    renderTable();
+  </script>
+</body>
+</html>
